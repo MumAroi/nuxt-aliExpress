@@ -33,7 +33,10 @@
 
 <script setup lang="ts">
 import { useUserStore } from '~/stores/user';
+import { Address } from '~/interfaces/address';
+
 const userStore = useUserStore()
+const user = useSupabaseUser()
 
 let contactName = ref<string>("")
 let address = ref<string>("")
@@ -41,13 +44,26 @@ let zipCode = ref<string>("")
 let city = ref<string>("")
 let country = ref<string>("")
 
-let currentAddress = ref<string>("")
+let currentAddress = ref<Address | null>(null)
 let isUpdate = ref<boolean>(false)
 let isWorking = ref<boolean>(false)
 let error = ref<{ type: string, message: string } | null>(null)
 
 
 watchEffect(async () => {
+  const { data } = await useFetch(`/api/prisma/get-address-by-user/${user.value?.id}`)
+  if (data) {
+    const userAddress = data as unknown as Address;
+    currentAddress.value = userAddress;
+    contactName.value = userAddress.name;
+    address.value = userAddress.address;
+    zipCode.value = userAddress.zipcode;
+    city.value = userAddress.city;
+    country.value = userAddress.country;
+
+    isUpdate.value = true
+  }
+
   userStore.isLoading = false
 })
 
@@ -86,5 +102,39 @@ const submit = async () => {
     isWorking.value = false
     return
   }
+  if (isUpdate.value) {
+    await useFetch(`/api/prisma/update-address/${currentAddress.value?.id}`, {
+      method: 'PATCH',
+      body: {
+        userId: user.value?.id,
+        name: contactName.value,
+        address: address.value,
+        zipCode: zipCode.value,
+        city: city.value,
+        country: country.value,
+      }
+    })
+
+    isWorking.value = false
+
+    return navigateTo('/checkout')
+  }
+
+  await useFetch(`/api/prisma/add-address/`, {
+    method: 'POST',
+    body: {
+      userId: user.value?.id,
+      name: contactName.value,
+      address: address.value,
+      zipCode: zipCode.value,
+      city: city.value,
+      country: country.value,
+    }
+  })
+
+  isWorking.value = false
+
+  return navigateTo('/checkout')
+
 }
 </script>

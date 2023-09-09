@@ -12,9 +12,9 @@
         </div>
       </div>
       <div class="md:w-[60%] bg-white p-3 rounded-lg">
-        <div v-if="true">
-          <p class="mb-2">Title</p>
-          <p class="font-light text-[12px] mb-2">description</p>
+        <div v-if="product">
+          <p class="mb-2">{{ product.title }}</p>
+          <p class="font-light text-[12px] mb-2">{{ product.description }}</p>
         </div>
         <div class="flex items-center pt-1.5">
           <span class="h-4 min-w-4 rounded-full p-0.5 bg-[#FFD000] mr-2">
@@ -70,17 +70,27 @@
 </template>
 
 <script setup lang="ts">
+import { Product } from '~/interfaces/product';
 import { useUserStore } from '~/stores/user';
 
 const route = useRoute()
 const userStore = useUserStore()
 let currentImage = ref<string | null>(null);
+let product = ref<Product | null>(null);
 
-onMounted(() => {
-  watchEffect(() => {
-    currentImage.value = "https://picsum.photos/id/222/800/800";
-    images.value[0] = "https://picsum.photos/id/77/800/800";
-  })
+watchEffect(() => {
+  if (product.value) {
+    currentImage.value = product.value.url
+    images.value[0] = product.value.url
+    userStore.isLoading = false
+  }
+})
+
+onBeforeMount(async () => {
+  const { data } = await useFetch<Product>(`/api/prisma/get-product-by-id/${route.params.id}`)
+  if (data) {
+    product.value = data as unknown as Product;
+  }
 })
 
 const images = ref<string[]>([
@@ -93,16 +103,21 @@ const images = ref<string[]>([
 ])
 
 const priceComputed = computed(() => {
-  return '30.29'
+  if (product.value) {
+    return product.value.price / 100
+  }
+  return '0.00'
 })
 
 const addToCart = () => {
-  alert('Add to cart')
+  if (product.value) {
+    userStore.cart.push(product.value)
+  }
 }
 const isInCart = computed(() => {
   let res = false
   userStore.cart.forEach(prod => {
-    if (route.params.id == prod.id) {
+    if (Number(route.params.id) === prod.id) {
       res = true
     }
   })

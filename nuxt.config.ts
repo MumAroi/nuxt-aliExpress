@@ -7,7 +7,7 @@ export default defineNuxtConfig({
 		"@pinia/nuxt",
 		"@pinia-plugin-persistedstate/nuxt",
 		"@nuxtjs/tailwindcss",
-		// "@nuxtjs/supabase",
+		"@nuxtjs/supabase",
 	],
 	runtimeConfig: {
 		public: {
@@ -20,10 +20,10 @@ export default defineNuxtConfig({
 			script: [{ src: "https://js.stripe.com/v3/", defer: true }],
 		},
 	},
-	// supabase: {
-	// 	redirectOptions: {
-	// 		login: "/",
-	// 		callback: "/confirm",
-	// 	},
-	// },
+	supabase: {
+		redirectOptions: {
+			login: "/",
+			callback: "/confirm",
+		},
+	},
 });
