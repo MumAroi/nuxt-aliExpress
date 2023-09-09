@@ -37,7 +37,7 @@ const userStore = useUserStore()
 
 let contactName = ref<string>("")
 let address = ref<string>("")
-let zipCode = ref<number | null>(null)
+let zipCode = ref<string>("")
 let city = ref<string>("")
 let country = ref<string>("")
 
