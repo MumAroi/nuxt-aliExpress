@@ -10,7 +10,7 @@
 
 <script setup lang="ts">
 import { useUserStore } from '~/stores/user';
-import { Product } from '~/types/product';
+import { Product } from '~/interfaces/product';
 const userStore = useUserStore()
 
 // let products = ref<Product[]|null>(null)
