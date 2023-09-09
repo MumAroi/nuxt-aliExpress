@@ -87,7 +87,7 @@ watchEffect(() => {
 })
 
 onBeforeMount(async () => {
-  const { data } = await useFetch<Product>(`/api/prisma/get-product-by-id/${route.params.id}`)
+  const { data } = await useFetch(`/api/prisma/get-product-by-id/${route.params.id}`)
   if (data) {
     product.value = data as unknown as Product;
   }
