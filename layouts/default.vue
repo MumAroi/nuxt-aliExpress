@@ -46,7 +46,7 @@
               <li @click="navigateTo('/orders')" class="text-[13px] py-2 px-4 w-full hover:bg-gray-200">
                 My Orders
               </li>
-              <li v-if="true" @click="client.auth.signOut()" class="text-[13px] py-2 px-4 w-full hover:bg-gray-200">
+              <li v-if="true" @click="" class="text-[13px] py-2 px-4 w-full hover:bg-gray-200">
                 Sign out
               </li>
             </ul>
