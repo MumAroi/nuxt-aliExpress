@@ -8,7 +8,7 @@
 
           <div class="text-xl font-semibold mb-2">Shipping Address</div>
 
-          <div v-if="false">
+          <div v-if="currentAddress">
 
             <NuxtLink to="/address" class="flex items-center pb-2 text-blue-500 hover:text-red-400">
               <Icon name="mdi:plus" size="18" class="mr-2" />
@@ -21,23 +21,23 @@
               <ul class="text-xs">
                 <li class="flex items-center gap-2">
                   <div>Contact name:</div>
-                  <div class="font-bold">TEST</div>
+                  <div class="font-bold">{{ currentAddress.name }}</div>
                 </li>
                 <li class="flex items-center gap-2">
                   <div>Address:</div>
-                  <div class="font-bold">TEST</div>
+                  <div class="font-bold">{{ currentAddress.address }}</div>
                 </li>
                 <li class="flex items-center gap-2">
                   <div>Zip Code:</div>
-                  <div class="font-bold">TEST</div>
+                  <div class="font-bold">{{ currentAddress.zipcode }}</div>
                 </li>
                 <li class="flex items-center gap-2">
                   <div>City:</div>
-                  <div class="font-bold">TEST</div>
+                  <div class="font-bold">{{ currentAddress.city }}</div>
                 </li>
                 <li class="flex items-center gap-2">
                   <div>Country:</div>
-                  <div class="font-bold">TEST</div>
+                  <div class="font-bold">{{ currentAddress.country }}</div>
                 </li>
               </ul>
             </div>
@@ -50,7 +50,7 @@
         </div>
 
         <div id="Items" class="bg-white rounded-lg p-4 mt-4">
-          <div v-for="product in products">
+          <div v-for="product in userStore.checkout">
             <CheckoutItem :product="product" />
           </div>
         </div>
@@ -110,11 +110,13 @@
 </template>
 
 <script setup lang="ts">
+import { Address } from '~/interfaces/address';
 import { Product } from '~/interfaces/product';
 import { useUserStore } from '~/stores/user';
 
 const userStore = useUserStore();
-const router = useRouter();
+const user = useSupabaseUser()
+const route = useRoute()
 
 let stripe = null
 let elements = null
@@ -122,18 +124,24 @@ let card = null
 let formInput = null
 let total = ref<number>(0)
 let clientSecret = null
-let currentAddress = ref(null)
+let currentAddress = ref<Address | null>(null)
 let isProcessing = ref<boolean>(false)
 
-let products = ref<Product[]>([
-  { id: 1, title: 'Product 1', description: "p01", price: 9000, url: 'https://picsum.photos/id/212/200/200' },
-  { id: 2, title: 'Product 2', description: "p02", price: 10000, url: 'https://picsum.photos/id/213/200/200' },
-  { id: 3, title: 'Product 3', description: "p03", price: 11000, url: 'https://picsum.photos/id/214/200/200' },
-  { id: 4, title: 'Product 4', description: "p04", price: 12000, url: 'https://picsum.photos/id/215/200/200' },
-  { id: 5, title: 'Product 5', description: "p05", price: 13000, url: 'https://picsum.photos/id/216/200/200' },
-  { id: 6, title: 'Product 6', description: "p06", price: 14000, url: 'https://picsum.photos/id/211/200/200' },
-  { id: 7, title: 'Product 7', description: "p07", price: 15000, url: 'https://picsum.photos/id/219/200/200' },
-])
+
+onBeforeMount(async () => {
+  if (userStore.checkout.length < 1) {
+    return navigateTo('/shoppingcart')
+  }
+
+  total.value = 0.00
+  if (user.value) {
+    const { data } = await useFetch<Address>(`/api/prisma/get-address-by-user/${user.value.id}`)
+    if (data.value) {
+      currentAddress.value = data.value;
+      setTimeout(() => userStore.isLoading = false, 200)
+    }
+  }
+})
 
 onMounted(async () => {
   isProcessing.value = true
@@ -141,6 +149,12 @@ onMounted(async () => {
   userStore.checkout.forEach(item => {
     total.value += item.price
   })
+})
+
+watchEffect(() => {
+  if (route.fullPath == '/checkout' && !user.value) {
+    return navigateTo('/auth')
+  }
 })
 
 watch(() => total.value, () => {

@@ -1,12 +1,12 @@
 <template>
   <div id="ShoppingCartPage" class="mt-4 max-w-[1200px] mx-auto px-2">
-    <div v-if="false" class="h-[500px] flex items-center justify-center">
+    <div v-if="!userStore.cart.length" class="h-[500px] flex items-center justify-center">
       <div class="pt-20">
         <img class="mx-auto" width="250" src="/cart-empty.png">
 
         <div class="text-xl text-center mt-4">No items yet?</div>
 
-        <div v-if="true" class="flex text-center">
+        <div v-if="!user" class="flex text-center">
           <NuxtLink to="/auth" class="bg-[#FD374F] w-full text-white text-[21px] font-semibold p-1.5 rounded-full mt-4">
             Sign in
           </NuxtLink>
@@ -19,7 +19,7 @@
 
         <div class="bg-white rounded-lg p-4">
           <div class="text-2xl font-bold mb-2">
-            Shopping Cart (0)
+            Shopping Cart ({{ userStore.cart.length }})
           </div>
         </div>
 
@@ -28,7 +28,7 @@
         </div>
 
         <div id="Items" class="bg-white rounded-lg p-4 mt-4">
-          <div v-for="product in products">
+          <div v-for="product in userStore.cart">
             <CartItem :product="product" :selectedArray="selectedArray" @selectedRadio="selectedRadioFunc" />
           </div>
         </div>
@@ -84,18 +84,9 @@
 import { Product } from '~/interfaces/product';
 import { useUserStore } from '~/stores/user';
 const userStore = useUserStore()
+const user = useSupabaseUser()
 
 let selectedArray = ref<{ id: number, val: boolean }[]>([])
-
-let products = ref<Product[]>([
-  { id: 1, title: 'Product 1', description: "p01", price: 9000, url: 'https://picsum.photos/id/212/200/200' },
-  { id: 2, title: 'Product 2', description: "p02", price: 10000, url: 'https://picsum.photos/id/213/200/200' },
-  { id: 3, title: 'Product 3', description: "p03", price: 11000, url: 'https://picsum.photos/id/214/200/200' },
-  { id: 4, title: 'Product 4', description: "p04", price: 12000, url: 'https://picsum.photos/id/215/200/200' },
-  { id: 5, title: 'Product 5', description: "p05", price: 13000, url: 'https://picsum.photos/id/216/200/200' },
-  { id: 6, title: 'Product 6', description: "p06", price: 14000, url: 'https://picsum.photos/id/211/200/200' },
-  { id: 7, title: 'Product 7', description: "p07", price: 15000, url: 'https://picsum.photos/id/219/200/200' },
-])
 
 const cards = ref<string[]>([
   'visa.png',

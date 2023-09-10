@@ -49,22 +49,19 @@ let isUpdate = ref<boolean>(false)
 let isWorking = ref<boolean>(false)
 let error = ref<{ type: string, message: string } | null>(null)
 
+const { data } = await useFetch<Address>(`/api/prisma/get-address-by-user/${user.value?.id}`)
+if (data.value) {
+  currentAddress.value = data.value;
+  contactName.value = data.value.name;
+  address.value = data.value.address;
+  zipCode.value = data.value.zipcode;
+  city.value = data.value.city;
+  country.value = data.value.country;
+  isUpdate.value = true
+}
 
 watchEffect(async () => {
-  const { data } = await useFetch(`/api/prisma/get-address-by-user/${user.value?.id}`)
-  if (data) {
-    const userAddress = data as unknown as Address;
-    currentAddress.value = userAddress;
-    contactName.value = userAddress.name;
-    address.value = userAddress.address;
-    zipCode.value = userAddress.zipcode;
-    city.value = userAddress.city;
-    country.value = userAddress.country;
-
-    isUpdate.value = true
-  }
-
-  userStore.isLoading = false
+  setTimeout(() => userStore.isLoading = false, 1000)
 })
 
 const submit = async () => {
@@ -114,24 +111,20 @@ const submit = async () => {
         country: country.value,
       }
     })
-
-    isWorking.value = false
-
-    return navigateTo('/checkout')
+  }else{
+    await useFetch(`/api/prisma/add-address/`, {
+      method: 'POST',
+      body: {
+        userId: user.value?.id,
+        name: contactName.value,
+        address: address.value,
+        zipCode: zipCode.value,
+        city: city.value,
+        country: country.value,
+      }
+    })
   }
-
-  await useFetch(`/api/prisma/add-address/`, {
-    method: 'POST',
-    body: {
-      userId: user.value?.id,
-      name: contactName.value,
-      address: address.value,
-      zipCode: zipCode.value,
-      city: city.value,
-      country: country.value,
-    }
-  })
-
+  
   isWorking.value = false
 
   return navigateTo('/checkout')

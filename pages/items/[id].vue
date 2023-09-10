@@ -49,17 +49,8 @@
 
         <div class="py-2" />
 
-        <button @click="addToCart()" :disabled="isInCart" class="
-        px-6 
-        py-2 
-        rounded-lg 
-        text-white 
-        text-lg 
-        font-semibold 
-        bg-gradient-to-r 
-        from-[#FF851A] 
-        to-[#FFAC2C]
-    ">
+        <button @click="addToCart()" :disabled="isInCart"
+          class="px-6 py-2 rounded-lg text-white text-lg font-semibold bg-gradient-to-r from-[#FF851A] to-[#FFAC2C]">
           <div v-if="isInCart">Is Added</div>
           <div v-else>Add to Cart</div>
         </button>
@@ -78,21 +69,6 @@ const userStore = useUserStore()
 let currentImage = ref<string | null>(null);
 let product = ref<Product | null>(null);
 
-watchEffect(() => {
-  if (product.value) {
-    currentImage.value = product.value.url
-    images.value[0] = product.value.url
-    userStore.isLoading = false
-  }
-})
-
-onBeforeMount(async () => {
-  const { data } = await useFetch(`/api/prisma/get-product-by-id/${route.params.id}`)
-  if (data) {
-    product.value = data as unknown as Product;
-  }
-})
-
 const images = ref<string[]>([
   '',
   'https://picsum.photos/id/212/800/800',
@@ -101,6 +77,19 @@ const images = ref<string[]>([
   'https://picsum.photos/id/99/800/800',
   'https://picsum.photos/id/144/800/800',
 ])
+
+const { data } = await useFetch<Product>(`/api/prisma/get-product-by-id/${route.params.id}`)
+if (data.value) {
+  product.value = data.value
+}
+
+watchEffect(() => {
+  if (product.value) {
+    currentImage.value = product.value.url
+    images.value[0] = product.value.url
+    setTimeout(() => userStore.isLoading = false, 1000)
+  }
+})
 
 const priceComputed = computed(() => {
   if (product.value) {
