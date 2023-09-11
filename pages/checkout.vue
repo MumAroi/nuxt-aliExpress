@@ -111,35 +111,34 @@
 
 <script setup lang="ts">
 import { Address } from '~/interfaces/address';
-import { Product } from '~/interfaces/product';
 import { useUserStore } from '~/stores/user';
 
 const userStore = useUserStore();
 const user = useSupabaseUser()
 const route = useRoute()
 
-let stripe = null
+definePageMeta({ middleware: "auth" })
+
+let stripe: any = null
 let elements = null
-let card = null
-let formInput = null
-let total = ref<number>(0)
-let clientSecret = null
+let card: any = null
+let total = ref<number>(0.00)
+let clientSecret: string | null = null
 let currentAddress = ref<Address | null>(null)
 let isProcessing = ref<boolean>(false)
 
 
+if (user.value) {
+  const { data } = await useFetch<Address>(`/api/prisma/get-address-by-user/${user.value.id}`)
+  if (data.value) {
+    currentAddress.value = data.value;
+    setTimeout(() => userStore.isLoading = false, 200)
+  }
+}
+
 onBeforeMount(async () => {
   if (userStore.checkout.length < 1) {
     return navigateTo('/shoppingcart')
-  }
-
-  total.value = 0.00
-  if (user.value) {
-    const { data } = await useFetch<Address>(`/api/prisma/get-address-by-user/${user.value.id}`)
-    if (data.value) {
-      currentAddress.value = data.value;
-      setTimeout(() => userStore.isLoading = false, 200)
-    }
   }
 })
 
@@ -163,12 +162,96 @@ watch(() => total.value, () => {
   }
 })
 
-const stripeInit = async () => { }
+const stripeInit = async () => {
+  const runtimeConfig = useRuntimeConfig()
+  stripe = Stripe(runtimeConfig.public.stripePk);
 
-const pay = async () => { }
+  let res = await $fetch('/api/stripe/paymentintent', {
+    method: 'POST',
+    body: {
+      amount: total.value,
+    }
+  })
+  clientSecret = res.client_secret
 
-const createOrder = async () => { }
+  elements = stripe.elements();
+  var style = {
+    base: {
+      fontSize: "18px",
+    },
+    invalid: {
+      fontFamily: 'Arial, sans-serif',
+      color: "#EE4B2B",
+      iconColor: "#EE4B2B"
+    }
+  };
+  card = elements.create("card", {
+    hidePostalCode: true,
+    style: style
+  });
 
-const showError = () => { };
+  // Stripe injects an iframe into the DOM
+  card.mount("#card-element");
+  card.on("change", function (event: any) {
+    // Disable the Pay button if there are no card details in the Element
+    document.querySelector("button").disabled = event.empty;
+    document.querySelector("#card-error").textContent = event.error ? event.error.message : "";
+  });
+
+  isProcessing.value = false
+}
+
+const pay = async () => {
+  if (!currentAddress.value) {
+    showError('Please add shipping address')
+    return
+  }
+  isProcessing.value = true
+
+  let result = await stripe.confirmCardPayment(clientSecret, {
+    payment_method: { card: card },
+  })
+
+  if (result.error) {
+    showError(result.error.message);
+    isProcessing.value = false
+  } else {
+    await createOrder(result.paymentIntent.id)
+    userStore.cart = []
+    userStore.checkout = []
+    setTimeout(() => {
+      return navigateTo('/success')
+    }, 500)
+  }
+}
+
+const createOrder = async (stripeId: any) => {
+  await useFetch('/api/prisma/create-order', {
+    method: "POST",
+    body: {
+      userId: user.value?.id,
+      stripeId: stripeId,
+      name: currentAddress.value?.name,
+      address: currentAddress.value?.address,
+      zipcode: currentAddress.value?.zipcode,
+      city: currentAddress.value?.city,
+      country: currentAddress.value?.country,
+      products: userStore.checkout
+    }
+  })
+}
+
+const showError = (errorMsgText: string) => {
+  let errorMsg = document.querySelector("#card-error");
+
+  if (errorMsg) {
+    errorMsg.textContent = errorMsgText;
+    setTimeout(() => {
+      if (errorMsg) {
+        errorMsg.textContent = ""
+      }
+    }, 4000);
+  }
+};
 
 </script>

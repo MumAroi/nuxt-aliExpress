@@ -81,7 +81,6 @@
   </div>
 </template>
 <script setup lang="ts">
-import { Product } from '~/interfaces/product';
 import { useUserStore } from '~/stores/user';
 const userStore = useUserStore()
 const user = useSupabaseUser()

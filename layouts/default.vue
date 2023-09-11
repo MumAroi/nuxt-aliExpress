@@ -129,17 +129,17 @@ const userStore = useUserStore()
 const client = useSupabaseClient()
 const user = useSupabaseUser()
 
-let isAccountMenu = ref(false);
-let isSearching = ref(true);
-let searchItem = ref('');
-let isCartHover = ref(false);
+let isAccountMenu = ref<boolean>(false);
+let isSearching = ref<boolean>(true);
+let searchItem = ref<string>('');
+let isCartHover = ref<boolean>(false);
 let items = ref<Product[] | null>(null)
 
 const searchByName = useDebounce(async () => {
   isSearching.value = true
-  const { data } = await useFetch(`/api/prisma/search-by-name/${searchItem.value}`)
+  const { data } = await useFetch<Product[]>(`/api/prisma/search-by-name/${searchItem.value}`)
   if (data) {
-    items.value = data.value as Product[]
+    items.value = data.value
     isSearching.value = false
   }
 }, 100)
